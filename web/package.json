@@ -1,0 +1,18 @@
+{
+  "name": "compare-country-area-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:android": "vite build && powershell -Command \"Remove-Item -Recurse -Force ../android/app/src/main/assets/www/* -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force dist/* ../android/app/src/main/assets/www/\"",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "ol": "^10.4.0"
+  },
+  "devDependencies": {
+    "vite": "^6.2.0"
+  }
+}

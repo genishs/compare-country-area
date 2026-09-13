@@ -1,0 +1,517 @@
+@import "ol/ol.css";
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --korea-color: #16a34a;
+  --korea-bg: rgba(34, 197, 94, 0.15);
+  --target-color: #2563eb;
+  --target-bg: rgba(37, 99, 235, 0.15);
+  --bg-surface: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --radius-lg: 16px;
+  --radius-md: 10px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--text-main);
+  background-color: #f8fafc;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* 지도 영역 */
+#map {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* 상단 네비게이션 바 */
+.app-header {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.brand-card {
+  pointer-events: auto;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 10px 16px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.brand-logo {
+  font-size: 22px;
+}
+
+.brand-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.3px;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* 상단 검색 영역 */
+.search-container {
+  pointer-events: auto;
+  position: relative;
+  width: 320px;
+  max-width: 45vw;
+}
+
+.search-input-wrapper {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.search-input-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.search-icon {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-right: 8px;
+}
+
+.search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 20;
+  display: none;
+}
+
+.search-item {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+}
+
+.search-item:hover {
+  background-color: #f8fafc;
+}
+
+.search-item-flag {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+.search-item-area {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* 플로팅 상태 뱃지 (위도/배율 & 리셋) */
+.scale-badge-container {
+  position: absolute;
+  bottom: 230px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 9;
+}
+
+.scale-badge {
+  pointer-events: auto;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--shadow-lg);
+}
+
+.badge-divider {
+  opacity: 0.4;
+}
+
+.badge-scale {
+  color: #4ade80;
+}
+
+.reset-btn {
+  pointer-events: auto;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 8px 14px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.15s ease;
+}
+
+.reset-btn:hover {
+  background-color: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+/* R-8: 데이터 로드 실패 안내 배너 */
+.data-error-banner {
+  position: absolute;
+  top: 84px;
+  left: 16px;
+  right: 16px;
+  z-index: 30;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* 하단 비교 카드 */
+/* R-4: OSM 저작자표시(.ol-attribution)는 지도 우측 하단에 뜨는데, 기존 bottom:14px
+   카드가 그 위를 그대로 덮어 ODbL 저작자표시 요건을 위반할 소지가 있었다.
+   attribution 컨트롤(기본 약 22px 높이 + 여백)이 가리지 않도록 카드를 올린다. */
+.comparison-card {
+  position: absolute;
+  bottom: 34px;
+  left: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 14px 18px;
+  z-index: 10;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.quick-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preset-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.preset-btn {
+  background: #f1f5f9;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-btn:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 24px 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: #f8fafc;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-color);
+}
+
+/* 2개국 카드 그리드 */
+.countries-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.country-box {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  position: relative;
+}
+
+.country-box.country-a {
+  background-color: var(--korea-bg);
+  border: 1.5px solid rgba(22, 163, 74, 0.4);
+}
+
+.country-box.country-b {
+  background-color: var(--target-bg);
+  border: 1.5px solid rgba(37, 99, 235, 0.4);
+}
+
+.box-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.country-a .box-tag { color: var(--korea-color); }
+.country-b .box-tag { color: var(--target-color); }
+
+.country-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.country-flag {
+  font-size: 18px;
+}
+
+.country-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.country-area {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.area-value {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.area-unit {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.country-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.vs-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 6px 8px;
+  border-radius: 50%;
+}
+
+/* 비율 섹션 */
+.ratio-section {
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.ratio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ratio-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ratio-summary {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.ratio-bar-container {
+  display: flex;
+  height: 22px;
+  background-color: #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.bar-fill.bar-a {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.bar-fill.bar-b {
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+}
+
+.bar-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* 인사이트 박스 */
+.insight-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  color: #334155;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  line-height: 1.4;
+}
+
+.insight-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* 모바일 화면 대응 */
+@media (max-width: 640px) {
+  .brand-card {
+    padding: 8px 12px;
+  }
+  .brand-title {
+    font-size: 14px;
+  }
+  .brand-subtitle {
+    display: none;
+  }
+  .search-container {
+    width: 170px;
+  }
+  .scale-badge-container {
+    bottom: 270px;
+  }
+  .countries-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .vs-badge {
+    display: none;
+  }
+  .quick-presets {
+    display: none;
+  }
+}

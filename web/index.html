@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>대한민국 바로알기 - 객관적 크기 비교</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- 상단 네비게이션 헤더 -->
+      <header class="app-header">
+        <div class="brand-card">
+          <span class="brand-logo">🌏</span>
+          <div>
+            <h1 class="brand-title">대한민국 바로알기</h1>
+            <p class="brand-subtitle">메르카토르 왜곡 보정 크기 비교</p>
+          </div>
+        </div>
+
+        <!-- 국가 검색창 -->
+        <div class="search-container">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="search-input"
+              class="search-input"
+              placeholder="국가 검색 (영국, 일본, 그린란드...)"
+              autocomplete="off"
+            />
+          </div>
+          <div id="search-results" class="search-results"></div>
+        </div>
+      </header>
+
+      <!-- 지도 캔버스 -->
+      <div id="map"></div>
+
+      <!-- 하단 비교 UI 컨테이너 (ComparisonSheet에 의해 렌더링됨) -->
+      <div id="sheet-container"></div>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
