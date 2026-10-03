@@ -61,6 +61,6 @@
 
 - 권한: `INTERNET`, `ACCESS_NETWORK_STATE`. 국가 경계·면적 데이터는 앱에 내장되어 있고, 배경 지도는 OpenStreetMap 공식 타일 서버에서 받아옵니다(요청에 기기의 IP가 전달됨).
 - 이 타일 요청은 표준 통신으로 보고 데이터 보안은 **수집 없음**으로 선언합니다. 개인정보처리방침에는 IP 전달 사실을 고지합니다. 처음에 IP를 「대략적인 위치」 수집으로 신고했더니 앱이 17세 이상으로 제한된 적이 있습니다(2026-09-13).
-- `web/`을 고쳤다면 `npm run build:android`(`web/`에서 실행, PowerShell이 필요함)로 `android/app/src/main/assets/www/`를 갱신하고, 그 결과를 함께 커밋한 뒤 빌드합니다. 앱에 들어가는 웹 자산은 이 폴더의 커밋된 파일입니다.
+- `web/`을 고쳤다면 `npm run build:android`(`web/`에서 실행, Node만 있으면 OS 무관)로 `android/app/src/main/assets/www/`를 갱신하고, 그 결과를 함께 커밋한 뒤 빌드합니다. 앱에 들어가는 웹 자산은 이 폴더의 커밋된 파일입니다. `npm run check:android`는 둘이 같은지 검사하며, PR에서는 GitHub Actions(`web-assets`)가 같은 검사를 돌립니다.
 - 타일 요청의 User-Agent(`DaehanmingukBaroalgi/1.0`)는 `MainActivity.kt`에 고정되어 있습니다. 메이저 버전을 올릴 때 함께 확인합니다.
 - 개인정보처리방침은 별도 공개 레포(`adrddday-privacy`)의 GitHub Pages(`comparecountry-privacy.html`)에서 호스팅합니다.

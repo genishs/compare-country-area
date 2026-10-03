@@ -1,0 +1,35 @@
+# 앱에 들어가는 웹 자산(android/app/src/main/assets/www)이 web/ 소스의 빌드 결과와 같은지 검사한다.
+# web/만 고치고 `npm run build:android`를 빠뜨리면 옛 번들이 그대로 출시되기 때문이다.
+name: web-assets
+
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'android/app/src/main/assets/www/**'
+      - '.github/workflows/web-assets.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'android/app/src/main/assets/www/**'
+      - '.github/workflows/web-assets.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run check:android
