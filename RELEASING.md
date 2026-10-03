@@ -36,8 +36,8 @@
   - Play Console 데이터 보안 선언
   - 개인정보처리방침 문구
   - 스토어 설명
-- [ ] 서명 릴리스 빌드(서명 키는 레포 밖에 보관, 키 경로·비밀번호는 어디에도 적지 않음). **주의:** 지금 커밋된 `android/app/build.gradle.kts`에는 서명 구성이 없습니다. 다음 출시 전에 서명 구성(환경변수로 키를 읽는 방식)을 레포에 넣어 두면 빌드 머신의 로컬 설정에 기대지 않게 됩니다(이슈 #3)
-- [ ] 릴리스 빌드로 에뮬레이터에서 주요 화면·기능 회귀 확인 (API 35 이상, 다크 모드 포함). 이 레포는 아직 R8이 꺼져 있습니다. 켜는 버전부터는 R8 빌드로 확인합니다
+- [ ] 서명 릴리스 빌드: `android/`에서 `./gradlew bundleRelease` (Gradle wrapper 9.3.0 포함). 서명 키는 레포 밖에 보관하고 키 경로·비밀번호는 어디에도 적지 않습니다. 키를 찾는 방법은 `android/app/build.gradle.kts` 위쪽 주석(환경변수 `SGSHS_KEYSTORE`·`SGSHS_KEYSTORE_PW_FILE`, 없으면 홈 디렉터리의 기본 위치)을 따르며, 키를 못 찾으면 릴리스 빌드는 실패합니다. 키 없이 확인용 무서명 빌드가 필요하면 `-PallowUnsignedRelease=true`
+- [ ] 릴리스 빌드로 에뮬레이터에서 주요 화면·기능 회귀 확인 (API 35 이상, 다크 모드 포함). 1.0.1부터 릴리스 빌드는 R8(코드·리소스 축소)이 켜져 있으므로 반드시 릴리스 빌드로 확인합니다
 - [ ] 산출물 SHA-256 기록, 태그 생성·push
 - [ ] Play Console 업로드 → 출시 노트 → 검토 제출
 - [ ] GitHub Release 작성, 마일스톤 닫기
@@ -61,6 +61,6 @@
 
 - 권한: `INTERNET`, `ACCESS_NETWORK_STATE`. 국가 경계·면적 데이터는 앱에 내장되어 있고, 배경 지도는 OpenStreetMap 공식 타일 서버에서 받아옵니다(요청에 기기의 IP가 전달됨).
 - 이 타일 요청은 표준 통신으로 보고 데이터 보안은 **수집 없음**으로 선언합니다. 개인정보처리방침에는 IP 전달 사실을 고지합니다. 처음에 IP를 「대략적인 위치」 수집으로 신고했더니 앱이 17세 이상으로 제한된 적이 있습니다(2026-09-13).
-- `web/`을 고쳤다면 `npm run build:android`(`web/`에서 실행, PowerShell이 필요함)로 `android/app/src/main/assets/www/`를 갱신하고, 그 결과를 함께 커밋한 뒤 빌드합니다. 앱에 들어가는 웹 자산은 이 폴더의 커밋된 파일입니다.
-- 타일 요청의 User-Agent(`DaehanmingukBaroalgi/1.0`)는 `MainActivity.kt`에 고정되어 있습니다. 메이저 버전을 올릴 때 함께 확인합니다.
+- `web/`을 고쳤다면 `npm run build:android`(`web/`에서 실행, Node만 있으면 OS 무관)로 `android/app/src/main/assets/www/`를 갱신하고, 그 결과를 함께 커밋한 뒤 빌드합니다. 앱에 들어가는 웹 자산은 이 폴더의 커밋된 파일입니다. `npm run check:android`는 둘이 같은지 검사하며, PR에서는 GitHub Actions(`web-assets`)가 같은 검사를 돌립니다.
+- 타일 요청의 User-Agent(`DaehanmingukBaroalgi/<versionName>`)는 `MainActivity.kt`가 `BuildConfig.VERSION_NAME`으로 만듭니다. 버전을 올리면 따라 바뀌므로 따로 고칠 곳은 없습니다.
 - 개인정보처리방침은 별도 공개 레포(`adrddday-privacy`)의 GitHub Pages(`comparecountry-privacy.html`)에서 호스팅합니다.

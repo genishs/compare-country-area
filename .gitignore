@@ -13,6 +13,11 @@ android/.idea/
 android/captures/
 android/.cxx/
 
+# --- 서명 키·비밀번호 파일 (레포 밖에 둔다. build.gradle.kts는 경로로만 읽음) ---
+*.jks
+*.keystore
+*.pass
+
 # --- R-1: VM 배포/실행 자동화 스크립트에 자격증명 하드코딩 흔적이 있어 커밋 제외
 # (파일 자체는 로컬 빌드/테스트용으로 유지, 실행 시 VM_IP/VM_USER/VM_PASS 환경변수 필요)
 deploy_and_run_vm.py

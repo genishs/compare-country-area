@@ -1,4 +1,10 @@
-# Add project specific ProGuard rules here.
-# isMinifyEnabled is currently false (see app/build.gradle.kts), so this file is not
-# actively applied yet, but build.gradle.kts references it via proguardFiles(...) for
-# the eventual release-signing step, so it must exist even while empty.
+# Project-specific R8 rules (release build: isMinifyEnabled = true, isShrinkResources = true).
+#
+# No extra keep rules are needed today:
+# - MainActivity is referenced from the manifest, which AGP keeps automatically.
+# - There is no JavaScript bridge (@JavascriptInterface) and no reflection. If a bridge is ever
+#   added, the default proguard-android-optimize.txt already keeps @JavascriptInterface methods,
+#   but the bridge class itself must stay reachable from code.
+# - androidx.webkit / appcompat / material ship their own consumer rules.
+# - The web app under src/main/assets/www is an asset, not a resource, so resource shrinking
+#   does not touch it.

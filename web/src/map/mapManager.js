@@ -6,7 +6,8 @@ import OSM from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Style, Fill, Stroke, Circle as CircleStyle, Text } from 'ol/style';
-import { fromLonLat, toLonLat } from 'ol/proj';
+import { fromLonLat, toLonLat, transformExtent } from 'ol/proj';
+import { createEmpty, extend } from 'ol/extent';
 import Translate from 'ol/interaction/Translate';
 import Collection from 'ol/Collection';
 import Feature from 'ol/Feature';
@@ -29,6 +30,19 @@ const COUNTRY_STYLE = new Style({
 const FEATURE_POLL_INTERVAL_MS = 100;
 const FEATURE_POLL_MAX_ATTEMPTS = 100; // 100ms * 100 = 10초
 
+// 기준 국가(드래그해서 옮기는 나라). 비교 대상으로는 고르지 않는다.
+const BASE_ISO = 'KOR';
+
+// '원위치' 때 돌아가는 한국 중심(경도, 위도)과 줌
+const KOREA_CENTER_LONLAT = [127.8, 36.5];
+const KOREA_HOME_ZOOM = 4;
+
+// 나라에 맞춰 지도를 옮길 때 허용하는 최대 줌 (작은 나라를 너무 크게 확대하지 않도록)
+const FIT_MAX_ZOOM = 6;
+
+// getFitPadding 옵션이 없을 때 쓰는 view.fit padding [위, 오른쪽, 아래, 왼쪽]
+const DEFAULT_FIT_PADDING = [100, 100, 240, 100];
+
 export class MapManager {
   constructor(targetElementId, options = {}) {
     this.targetId = targetElementId;
@@ -37,6 +51,11 @@ export class MapManager {
     // R-7: 국가 피처 로드가 끝난 뒤 실제로 호출되는 콜백. main.js가 고정 setTimeout으로
     // "다 됐겠지" 하고 넘겨짚는 대신 이 콜백을 신호로 삼도록 한다.
     this.onFeaturesReady = options.onFeaturesReady || (() => {});
+    // 지도 위에 떠 있는 UI(상단 헤더·하단 시트)에 가리지 않게 view.fit에 줄 padding을 돌려주는 함수.
+    // 화면 크기와 비교 카드 높이에 따라 달라지므로 맞출 때마다 새로 묻는다.
+    this.getFitPadding = options.getFitPadding || null;
+    // 국가 데이터가 오기 전 첫 프레임에 보여 줄 범위 [서, 남, 동, 북] (경도·위도)
+    this.initialExtentLonLat = options.initialExtentLonLat || null;
 
     // 상태 보관
     this.baseKoreaFeature = null;
@@ -95,8 +114,8 @@ export class MapManager {
 
     // 5. 지도 뷰 생성 (한국 중심)
     this.view = new View({
-      center: fromLonLat([127.8, 36.5]),
-      zoom: 4,
+      center: fromLonLat(KOREA_CENTER_LONLAT),
+      zoom: KOREA_HOME_ZOOM,
       minZoom: 2,
       maxZoom: 12
     });
@@ -113,8 +132,54 @@ export class MapManager {
       view: this.view
     });
 
+    // 첫 화면: 국가 데이터(GeoJSON)를 읽는 동안에도 처음 비교할 두 나라가 들어오는 범위를 먼저
+    // 띄워 둔다. 데이터가 오면 main.js가 실제 두 나라 범위로 다시 맞춘다.
+    const size = this.map.getSize();
+    if (this.initialExtentLonLat && size && size[0] > 0 && size[1] > 0) {
+      this.view.fit(transformExtent(this.initialExtentLonLat, 'EPSG:4326', 'EPSG:3857'), {
+        padding: this.fitPadding(),
+        maxZoom: FIT_MAX_ZOOM
+      });
+    }
+
     this.setupInteractions();
+    this.showLoadingNotice();
     this.loadInitialKorea();
+  }
+
+  /** view.fit에 줄 padding [위, 오른쪽, 아래, 왼쪽] */
+  fitPadding() {
+    return (this.getFitPadding && this.getFitPadding()) || DEFAULT_FIT_PADDING;
+  }
+
+  /** 범위(또는 도형)가 위아래 UI에 가리지 않고 보이도록 지도를 옮긴다. */
+  fitToView(geometryOrExtent, { duration = 800, maxZoom = FIT_MAX_ZOOM } = {}) {
+    this.view.fit(geometryOrExtent, {
+      padding: this.fitPadding(),
+      duration,
+      maxZoom
+    });
+  }
+
+  /**
+   * 국가 데이터를 읽는 동안 지도 위에 작은 안내를 띄운다. 기기에 따라 몇 초 걸릴 수 있어
+   * 빈 지도만 보이면 멈춘 것처럼 보이기 때문이다. 로드가 끝나거나 실패하면 지운다.
+   */
+  showLoadingNotice() {
+    const target = document.getElementById(this.targetId);
+    const host = (target && target.parentElement) || document.body;
+
+    this.loadingNotice = document.createElement('div');
+    this.loadingNotice.className = 'data-loading-notice';
+    this.loadingNotice.textContent = '국가 경계 데이터를 불러오는 중…';
+    host.appendChild(this.loadingNotice);
+  }
+
+  hideLoadingNotice() {
+    if (this.loadingNotice) {
+      this.loadingNotice.remove();
+      this.loadingNotice = null;
+    }
   }
 
   setupInteractions() {
@@ -149,7 +214,7 @@ export class MapManager {
 
       if (clickedCountry) {
         const props = clickedCountry.getProperties();
-        if (props.iso_a3 === 'KOR') return; // 한국 자체 클릭은 대상 국가로 지정하지 않음
+        if (props.iso_a3 === BASE_ISO) return; // 한국 자체 클릭은 대상 국가로 지정하지 않음
         this.setTargetCountry(clickedCountry);
       }
     });
@@ -179,10 +244,12 @@ export class MapManager {
         return;
       }
 
+      this.hideLoadingNotice();
+
       // 한국 피처 찾기
       const kor = features.find(f => {
         const p = f.getProperties();
-        return p.iso_a3 === 'KOR' || p.name_en === 'South Korea';
+        return p.iso_a3 === BASE_ISO || p.name_en === 'South Korea';
       });
 
       if (kor) {
@@ -212,6 +279,7 @@ export class MapManager {
   handleDataLoadError(message = '국가 경계 데이터를 불러오지 못했습니다. 앱을 재시작하거나 네트워크 상태를 확인해 주세요.') {
     if (this._dataErrorShown) return;
     this._dataErrorShown = true;
+    this.hideLoadingNotice();
 
     console.error('[MapManager] 국가 데이터 로드 실패:', message);
 
@@ -297,8 +365,8 @@ export class MapManager {
 
     // 뷰를 한국 중심으로 부드럽게 이동
     this.view.animate({
-      center: fromLonLat([127.8, 36.5]),
-      zoom: 4,
+      center: fromLonLat(KOREA_CENTER_LONLAT),
+      zoom: KOREA_HOME_ZOOM,
       duration: 600
     });
   }
@@ -322,7 +390,13 @@ export class MapManager {
     });
   }
 
-  selectCountryByIso(isoA3) {
+  /**
+   * 비교 대상 국가를 고르고 그 나라로 지도를 옮긴다.
+   * @param {string} isoA3 국가 코드 (iso_a3 또는 iso_a2)
+   * @param {{withKorea?: boolean}} [options] withKorea가 true면 한국과 대상 국가가 함께 보이는 범위로 맞춘다
+   *     (첫 화면용). 기본은 대상 국가 범위.
+   */
+  selectCountryByIso(isoA3, { withKorea = false } = {}) {
     const features = this.countriesSource.getFeatures();
     const target = features.find(f => {
       const p = f.getProperties();
@@ -330,15 +404,24 @@ export class MapManager {
     });
 
     if (target) {
+      // 기준 국가(한국)를 고르면 한국 대 한국 비교가 되므로 비교 대상은 그대로 두고, 지금 한국
+      // 폴리곤이 있는 곳(드래그로 옮겨 두었으면 그 자리)으로 지도만 옮긴다.
+      if (target.get('iso_a3') === BASE_ISO) {
+        if (this.activeKoreaFeature) {
+          this.fitToView(this.activeKoreaFeature.getGeometry().getExtent());
+        }
+        return;
+      }
+
       this.setTargetCountry(target);
 
-      // 대상 국가로 뷰포트 이동
-      const extent = target.getGeometry().getExtent();
-      this.view.fit(extent, {
-        padding: [100, 100, 240, 100],
-        duration: 800,
-        maxZoom: 6
-      });
+      // 대상 국가로 뷰포트 이동. getExtent()는 도형이 캐시한 배열이라 직접 늘리면 안 되므로 새 범위에 합친다.
+      const extent = createEmpty();
+      extend(extent, target.getGeometry().getExtent());
+      if (withKorea && this.activeKoreaFeature) {
+        extend(extent, this.activeKoreaFeature.getGeometry().getExtent());
+      }
+      this.fitToView(extent, { duration: withKorea ? 500 : 800 });
     }
   }
 

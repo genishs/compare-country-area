@@ -14,10 +14,14 @@
         android:theme="@style/Theme.CompareCountryArea"
         android:hardwareAccelerated="true">
 
+        <!-- configChanges: 회전·창 크기(폴더블 접기/펴기, 멀티윈도)·다크 모드·화면 밀도가 바뀌어도
+             액티비티를 다시 만들지 않는다. 다시 만들면 WebView가 새로 로드되어 옮겨 둔 한국 위치와
+             비교 국가가 초기화된다. 웹 화면은 다크 모드용 스타일이 없고(values-night도 없음) 레이아웃은
+             WebView가 새 크기에 맞춰 다시 그리므로 직접 처리해도 달라지는 것이 없다. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|keyboardHidden">
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

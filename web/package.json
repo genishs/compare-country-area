@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:android": "vite build && powershell -Command \"Remove-Item -Recurse -Force ../android/app/src/main/assets/www/* -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force dist/* ../android/app/src/main/assets/www/\"",
+    "build:android": "vite build && node scripts/sync-android-assets.mjs",
+    "check:android": "vite build && node scripts/sync-android-assets.mjs --check",
     "preview": "vite preview"
   },
   "dependencies": {
