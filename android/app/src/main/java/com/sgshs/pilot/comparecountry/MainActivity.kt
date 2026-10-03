@@ -1,12 +1,16 @@
 package com.sgshs.pilot.comparecountry
 
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -18,6 +22,14 @@ import androidx.webkit.WebViewClientCompat
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+
+    // 뒤로가기: WebView 안에 돌아갈 기록이 있을 때만 켜서 goBack()에 쓰고, 없으면 꺼 둬서 시스템 기본
+    // 동작(앱 나가기, predictive back 미리보기 포함)에 맡긴다. 켜고 끄는 것은 doUpdateVisitedHistory에서 한다.
+    private val webBackCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            webView.goBack()
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +51,26 @@ class MainActivity : AppCompatActivity() {
             ): WebResourceResponse? {
                 return assetLoader.shouldInterceptRequest(request.url)
             }
+
+            // 앱 자산 도메인 밖으로 나가는 링크(OSM 저작자 표기 등)는 앱 WebView가 아니라 기본 브라우저로
+            // 연다. WebView 안에서 열면 앱으로 돌아올 때 페이지가 다시 로드되어 비교 상태가 초기화된다.
+            override fun shouldOverrideUrlLoading(
+                view: WebView,
+                request: WebResourceRequest
+            ): Boolean {
+                val url = request.url
+                if (!request.isForMainFrame || url.host == WebViewAssetLoader.DEFAULT_DOMAIN) {
+                    return false
+                }
+                if (url.scheme == "https" || url.scheme == "http") {
+                    openInBrowser(url)
+                }
+                return true
+            }
+
+            override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+                webBackCallback.isEnabled = view.canGoBack()
+            }
         }
 
         webView.settings.apply {
@@ -57,19 +89,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 안드로이드 뒤로가기 버튼 처리
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (webView.canGoBack()) {
-                    webView.goBack()
-                } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
-                }
-            }
-        })
+        onBackPressedDispatcher.addCallback(this, webBackCallback)
 
         // 로컬 빌드된 OpenLayers 웹 앱 로드
-        webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html")
+        webView.loadUrl("https://${WebViewAssetLoader.DEFAULT_DOMAIN}/assets/www/index.html")
+    }
+
+    private fun openInBrowser(uri: Uri) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE))
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, R.string.no_app_to_open_link, Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**
