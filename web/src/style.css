@@ -246,6 +246,24 @@ body, html {
   text-align: center;
 }
 
+/* 국가 데이터를 읽는 동안 띄우는 안내 (로드가 끝나거나 실패하면 사라짐) */
+.data-loading-notice {
+  position: absolute;
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+}
+
 /* 하단 비교 카드 */
 /* R-4: OSM 저작자표시(.ol-attribution)는 지도 우측 하단에 뜨는데, 기존 bottom:14px
    카드가 그 위를 그대로 덮어 ODbL 저작자표시 요건을 위반할 소지가 있었다.
