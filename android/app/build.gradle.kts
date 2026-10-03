@@ -32,6 +32,10 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    buildFeatures {
+        // MainActivity가 OSM 타일 요청 User-Agent에 BuildConfig.VERSION_NAME을 쓴다
+        buildConfig = true
+    }
 }
 
 dependencies {

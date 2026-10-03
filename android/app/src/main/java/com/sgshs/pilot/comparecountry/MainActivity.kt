@@ -47,7 +47,8 @@ class MainActivity : AppCompatActivity() {
             // R-2: OSM 공식 타일서버를 직접 호출하므로 OSM 사용 정책(Tile Usage Policy)에
             // 따라 앱을 식별할 수 있는 User-Agent를 붙인다. JS의 fetch/XHR는 User-Agent가
             // forbidden header라 자바스크립트에서 설정할 수 없어, WebView 설정이 유일한 경로다.
-            userAgentString = "${WebSettings.getDefaultUserAgent(this@MainActivity)} DaehanmingukBaroalgi/1.0 (+https://github.com/genishs/compare-country-area)"
+            // 버전은 build.gradle.kts의 versionName을 그대로 쓴다(따로 고칠 곳이 없도록).
+            userAgentString = "${WebSettings.getDefaultUserAgent(this@MainActivity)} DaehanmingukBaroalgi/${BuildConfig.VERSION_NAME} (+https://github.com/genishs/compare-country-area)"
         }
 
         // 안드로이드 뒤로가기 버튼 처리

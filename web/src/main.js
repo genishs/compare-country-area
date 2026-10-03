@@ -143,6 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
           mapManager.selectCountryByIso(m.iso_a3);
           searchResults.style.display = 'none';
           searchInput.value = '';
+          // 고른 뒤에는 키보드를 내려 지도와 비교 카드가 보이게 한다
+          searchInput.blur();
         });
 
         searchResults.appendChild(item);

@@ -404,6 +404,15 @@ export class MapManager {
     });
 
     if (target) {
+      // 기준 국가(한국)를 고르면 한국 대 한국 비교가 되므로 비교 대상은 그대로 두고, 지금 한국
+      // 폴리곤이 있는 곳(드래그로 옮겨 두었으면 그 자리)으로 지도만 옮긴다.
+      if (target.get('iso_a3') === BASE_ISO) {
+        if (this.activeKoreaFeature) {
+          this.fitToView(this.activeKoreaFeature.getGeometry().getExtent());
+        }
+        return;
+      }
+
       this.setTargetCountry(target);
 
       // 대상 국가로 뷰포트 이동. getExtent()는 도형이 캐시한 배열이라 직접 늘리면 안 되므로 새 범위에 합친다.
