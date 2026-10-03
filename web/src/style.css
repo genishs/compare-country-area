@@ -47,6 +47,13 @@ body, html {
   left: 0;
 }
 
+/* OpenLayers 줌 버튼: 기본 위치(왼쪽 위 0.5em)는 상단 제목 카드 밑에 깔려 보이지 않으므로
+   헤더 아래로 내린다 (헤더는 화면 폭에 따라 높이 48~62px, top 16px) */
+.ol-zoom {
+  top: 88px;
+  left: 16px;
+}
+
 /* 상단 네비게이션 바 */
 .app-header {
   position: absolute;
