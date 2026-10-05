@@ -129,7 +129,7 @@ export class ComparisonSheet {
 
         <div class="comparison-body" id="comparison-body">
           <div class="empty-state" id="empty-state">
-            지도에서 다른 나라를 터치하거나 위 버튼을 눌러 비교해 보세요!
+            지도에서 국가를 터치하거나 상단 검색창에서 비교할 나라를 선택해 보세요.
           </div>
 
           <div class="comparison-details" id="comparison-details" style="display: none;">

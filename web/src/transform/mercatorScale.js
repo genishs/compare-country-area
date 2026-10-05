@@ -35,6 +35,39 @@ export function getLatitudeFrom3857(coord3857) {
 }
 
 /**
+ * 위도에 따른 선형 축척 팩터 및 면적 배율 계산 (순수 계산 함수)
+ *
+ * @param {number} baseLatDeg 기준 위도 (도)
+ * @param {number} targetLatDeg 대상 위도 (도)
+ * @returns {{
+ *   scaleFactor: number,
+ *   areaMultiplier: number,
+ *   newLatitude: number,
+ *   isLatitudeClamped: boolean
+ * }}
+ */
+export function calculateScaleFactor(baseLatDeg, targetLatDeg) {
+  // 극단적인 극지방 왜곡 및 무한대(infinity) 방지를 위해 위도를 -82도 ~ +82도로 클램핑
+  const clampedLatDeg = Math.max(-82, Math.min(82, targetLatDeg));
+  const isLatitudeClamped = clampedLatDeg !== targetLatDeg;
+
+  const baseLatRad = degToRad(baseLatDeg);
+  const currentLatRad = degToRad(clampedLatDeg);
+
+  // 선형 스케일 팩터 S = cos(phi_base) / cos(phi_current)
+  // 고위도로 갈수록 cos(phi_current)가 작아지므로 S는 커져서 폴리곤이 시각적으로 팽창함
+  const scaleFactor = Math.cos(baseLatRad) / Math.cos(currentLatRad);
+
+  return {
+    scaleFactor: Number(scaleFactor.toFixed(3)),
+    areaMultiplier: Number((scaleFactor * scaleFactor).toFixed(3)),
+    // R-6: 실제 계산에 쓰인 위도(클램프된 값)를 반환
+    newLatitude: Number(clampedLatDeg.toFixed(2)),
+    isLatitudeClamped
+  };
+}
+
+/**
  * 원본 지오메트리를 새 위치로 이동하고, 위도 차이에 따른 메르카토르 축척 보정 적용
  *
  * @param {import('ol/geom/Geometry').default} baseGeom 원본 위치(기준 위도)의 지오메트리
@@ -51,19 +84,7 @@ export function getLatitudeFrom3857(coord3857) {
  */
 export function scaleGeometryForLatitude(baseGeom, baseCenter, baseLatDeg, newCenter) {
   const newLatDeg = getLatitudeFrom3857(newCenter);
-
-  // 극단적인 극지방 왜곡 및 무한대(infinity) 방지를 위해 위도를 -82도 ~ +82도로 클램핑
-  const clampedLatDeg = Math.max(-82, Math.min(82, newLatDeg));
-  const isLatitudeClamped = clampedLatDeg !== newLatDeg;
-
-  const baseLatRad = degToRad(baseLatDeg);
-  const currentLatRad = degToRad(clampedLatDeg);
-
-  // 선형 스케일 팩터 S = cos(phi_base) / cos(phi_current)
-  // 고위도로 갈수록 cos(phi_current)가 작아지므로 S는 커져서 폴리곤이 시각적으로 팽창함
-  // (clampedLatDeg가 ±82도를 넘지 않으므로 cos(currentLatRad)는 항상 0보다 크고,
-  //  분모 하한 클램프 없이도 안전하다 — R-6 겸 사소: 죽은 Math.max(0.05, ...) 정리)
-  const scaleFactor = Math.cos(baseLatRad) / Math.cos(currentLatRad);
+  const scaleInfo = calculateScaleFactor(baseLatDeg, newLatDeg);
 
   // 원본 지오메트리 복제
   const clonedGeom = baseGeom.clone();
@@ -74,16 +95,10 @@ export function scaleGeometryForLatitude(baseGeom, baseCenter, baseLatDeg, newCe
   clonedGeom.translate(deltaX, deltaY);
 
   // 2. 새 중심점을 기준으로 위도 보정치 스케일링
-  clonedGeom.scale(scaleFactor, scaleFactor, newCenter);
+  clonedGeom.scale(scaleInfo.scaleFactor, scaleInfo.scaleFactor, newCenter);
 
   return {
     geometry: clonedGeom,
-    scaleFactor: Number(scaleFactor.toFixed(3)),
-    areaMultiplier: Number((scaleFactor * scaleFactor).toFixed(3)),
-    // R-6: 실제 계산에 쓰인 위도(클램프된 값)를 표시용으로 반환한다.
-    // 그렇지 않으면 극지방 근처에서 "위도 88°인데 축척 5.77배"처럼
-    // 클램프 상한(82도 기준 축척)과 표시 위도가 모순되어 보이는 문제가 있었다.
-    newLatitude: Number(clampedLatDeg.toFixed(2)),
-    isLatitudeClamped
+    ...scaleInfo
   };
 }
