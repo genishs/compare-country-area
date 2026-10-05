@@ -12,6 +12,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -22,6 +23,7 @@ import androidx.webkit.WebViewClientCompat
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private var lastInsetsJs: String? = null
 
     // 뒤로가기: WebView 안에 돌아갈 기록이 있을 때만 켜서 goBack()에 쓰고, 없으면 꺼 둬서 시스템 기본
     // 동작(앱 나가기, predictive back 미리보기 포함)에 맡긴다. 켜고 끄는 것은 doUpdateVisitedHistory에서 한다.
@@ -33,11 +35,13 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
+        // #2: Android 15+(API 35+) 및 이전 버전(API 21+) 모두에서 공식 권장 Edge-to-Edge 활성화
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        applySystemBarInsets()
 
         webView = findViewById(R.id.webView)
+        applySystemBarInsets()
 
         // 로컬 assets/www 폴더의 파일들을 안전한 가상 도메인으로 매핑 (CORS 및 로컬 파일 보안 이슈 완벽 해결)
         val assetLoader = WebViewAssetLoader.Builder()
@@ -70,6 +74,14 @@ class MainActivity : AppCompatActivity() {
 
             override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
                 webBackCallback.isEnabled = view.canGoBack()
+            }
+
+            override fun onPageFinished(view: WebView, url: String?) {
+                super.onPageFinished(view, url)
+                // 페이지 로드 완료 시 최신 시스템 바/노치 인셋을 CSS 변수로 즉시 주입
+                lastInsetsJs?.let { js ->
+                    view.evaluateJavascript(js, null)
+                }
             }
         }
 
@@ -104,25 +116,51 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * targetSdk 35 이상 앱은 Android 15+에서 edge-to-edge가 강제되어 화면이 상태바·내비게이션 바·
-     * 디스플레이 컷아웃 밑까지 그려진다. 그 크기만큼 루트에 padding을 줘서 WebView(제목 카드·검색창·
-     * 비교 카드·OSM 저작자 표기)가 시스템 바에 가리지 않게 한다. 바 뒤로는 루트 배경색이 보인다.
-     * API 34 이하는 시스템이 이미 바 영역을 빼고 배치하므로 인셋이 0으로 와서 달라지는 것이 없다.
+     * #2: 몰입형 Edge-to-Edge 구현
+     * 지도는 상태바·내비게이션 바·디스플레이 컷아웃(노치/펀치홀) 뒤까지 100% 꽉 채우고,
+     * 시스템 인셋(left, top, right, bottom)을 CSS 변수(--safe-area-*)로 웹에 실시간 주입하여
+     * 상단 헤더, 검색창, 줌 버튼, 하단 바텀시트, OSM 저작자 표기가 가리지 않도록 배치한다.
      */
     private fun applySystemBarInsets() {
         val root = findViewById<View>(R.id.root)
-        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+        // 루트 뷰 패딩은 0으로 유지하여 WebView 지도가 화면 전체를 채우도록 함
+        root.setPadding(0, 0, 0, 0)
+
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            WindowInsetsCompat.CONSUMED
+            val density = resources.displayMetrics.density
+            val topDp = (bars.top / density).toInt()
+            val bottomDp = (bars.bottom / density).toInt()
+            val leftDp = (bars.left / density).toInt()
+            val rightDp = (bars.right / density).toInt()
+
+            updateWebSafeInsets(topDp, bottomDp, leftDp, rightDp)
+            insets
         }
 
-        // 바 뒤 배경(루트, #f8fafc)이 밝으므로 상태바·내비게이션 바 아이콘을 어둡게 한다.
+        // 바 뒤에 밝은 OSM 지도 타일이 채워지므로 상태바·내비게이션 바 아이콘을 어둡게 설정
         WindowCompat.getInsetsController(window, window.decorView).apply {
             isAppearanceLightStatusBars = true
             isAppearanceLightNavigationBars = true
+        }
+    }
+
+    private fun updateWebSafeInsets(top: Int, bottom: Int, left: Int, right: Int) {
+        val js = """
+            (function() {
+                var el = document.documentElement;
+                if (!el) return;
+                el.style.setProperty('--safe-area-top', '${top}px');
+                el.style.setProperty('--safe-area-bottom', '${bottom}px');
+                el.style.setProperty('--safe-area-left', '${left}px');
+                el.style.setProperty('--safe-area-right', '${right}px');
+            })();
+        """.trimIndent()
+        lastInsetsJs = js
+        if (::webView.isInitialized) {
+            webView.evaluateJavascript(js, null)
         }
     }
 }

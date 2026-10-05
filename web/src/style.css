@@ -1,6 +1,10 @@
 @import "ol/ol.css";
 
 :root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
   --primary: #2563eb;
   --primary-dark: #1d4ed8;
   --korea-color: #16a34a;
@@ -48,18 +52,18 @@ body, html {
 }
 
 /* OpenLayers 줌 버튼: 기본 위치(왼쪽 위 0.5em)는 상단 제목 카드 밑에 깔려 보이지 않으므로
-   헤더 아래로 내린다 (헤더는 화면 폭에 따라 높이 48~62px, top 16px) */
+   헤더 아래로 내린다 (상태바/노치 safe-area 반영) */
 .ol-zoom {
-  top: 88px;
-  left: 16px;
+  top: calc(88px + var(--safe-area-top));
+  left: calc(16px + var(--safe-area-left));
 }
 
-/* 상단 네비게이션 바 */
+/* 상단 네비게이션 바 (#2: 상태바/노치 safe-area 반영) */
 .app-header {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
+  top: calc(16px + var(--safe-area-top));
+  left: calc(16px + var(--safe-area-left));
+  right: calc(16px + var(--safe-area-right));
   z-index: 10;
   display: flex;
   align-items: center;
@@ -177,7 +181,7 @@ body, html {
   color: var(--text-muted);
 }
 
-/* 하단 UI 컨테이너 (축척 배지 줄 + 비교 카드) */
+/* 하단 UI 컨테이너 (축척 배지 줄 + 비교 카드) (#2: safe-area 반영) */
 #sheet-container {
   position: absolute;
   bottom: 0;
@@ -188,7 +192,7 @@ body, html {
   align-items: center;
   pointer-events: none;
   z-index: 10;
-  padding: 0 14px 16px 14px;
+  padding: 0 calc(14px + var(--safe-area-right)) calc(16px + var(--safe-area-bottom)) calc(14px + var(--safe-area-left));
 }
 
 /* 플로팅 상태 뱃지 (위도/배율 & 리셋) — 카드 바로 위에 항상 위치 */
@@ -247,12 +251,12 @@ body, html {
   transform: translateY(-1px);
 }
 
-/* R-8: 데이터 로드 실패 안내 배너 */
+/* R-8: 데이터 로드 실패 안내 배너 (#2: safe-area 반영) */
 .data-error-banner {
   position: absolute;
-  top: 84px;
-  left: 16px;
-  right: 16px;
+  top: calc(84px + var(--safe-area-top));
+  left: calc(16px + var(--safe-area-left));
+  right: calc(16px + var(--safe-area-right));
   z-index: 30;
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -268,7 +272,7 @@ body, html {
 /* 국가 데이터를 읽는 동안 띄우는 안내 (로드가 끝나거나 실패하면 사라짐) */
 .data-loading-notice {
   position: absolute;
-  top: 84px;
+  top: calc(84px + var(--safe-area-top));
   left: 50%;
   transform: translateX(-50%);
   z-index: 30;
@@ -281,6 +285,12 @@ body, html {
   white-space: nowrap;
   box-shadow: var(--shadow-lg);
   pointer-events: none;
+}
+
+/* OpenLayers 저작자 표기: 내비게이션 바 / 제스처 바에 가려지지 않도록 safe-area-bottom 반영 */
+.ol-attribution {
+  bottom: calc(4px + var(--safe-area-bottom)) !important;
+  right: calc(6px + var(--safe-area-right)) !important;
 }
 
 /* 하단 비교 카드 */
