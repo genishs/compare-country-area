@@ -219,14 +219,21 @@ export class MapManager {
       }
     });
 
-    // 마우스 커서 호버 피드백
-    this.map.on('pointermove', (evt) => {
-      if (evt.dragging) return;
-      const hit = this.map.hasFeatureAtPixel(evt.pixel, {
-        layerFilter: (layer) => layer === this.koreaLayer || layer === this.countriesLayer
+    // 마우스 커서 호버 피드백 (터치 기기 환경에서는 불필요한 Canvas getImageData 리드백 방지를 위해 비활성화)
+    const hasHoverSupport = (typeof window !== 'undefined' && window.matchMedia)
+      ? window.matchMedia('(hover: hover) and (pointer: fine)').matches
+      : (typeof window !== 'undefined' && !('ontouchstart' in window) && !(navigator?.maxTouchPoints > 0));
+
+    if (hasHoverSupport) {
+      this.map.on('pointermove', (evt) => {
+        if (evt.dragging) return;
+        if (evt.originalEvent && evt.originalEvent.pointerType === 'touch') return;
+        const hit = this.map.hasFeatureAtPixel(evt.pixel, {
+          layerFilter: (layer) => layer === this.koreaLayer || layer === this.countriesLayer
+        });
+        this.map.getTargetElement().style.cursor = hit ? 'pointer' : '';
       });
-      this.map.getTargetElement().style.cursor = hit ? 'pointer' : '';
-    });
+    }
   }
 
   loadInitialKorea() {
