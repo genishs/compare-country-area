@@ -11,6 +11,12 @@ export class ComparisonSheet {
     this.onResetClick = options.onResetClick || (() => {});
     this.onPresetSelect = options.onPresetSelect || (() => {});
     this.onTargetSelect = options.onTargetSelect || (() => {});
+    this.onToggleCollapse = options.onToggleCollapse || (() => {});
+
+    // #14: 화면 높이가 520px 이하(가로 모드 휴대폰 등)이거나 세로 모바일(640px 이하)인 경우 기본 접힌 상태로 시작
+    const isLowHeight = typeof window !== 'undefined' && window.innerHeight <= 520;
+    const isNarrowMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+    this.isCollapsed = isLowHeight || isNarrowMobile;
 
     this.render();
   }
@@ -30,6 +36,40 @@ export class ComparisonSheet {
     this.updateScaleBadge();
   }
 
+  toggleCollapse() {
+    this.isCollapsed = !this.isCollapsed;
+    this.updateCollapsedState();
+    this.onToggleCollapse(this.isCollapsed);
+  }
+
+  expand() {
+    if (this.isCollapsed) {
+      this.isCollapsed = false;
+      this.updateCollapsedState();
+      this.onToggleCollapse(false);
+    }
+  }
+
+  collapse() {
+    if (!this.isCollapsed) {
+      this.isCollapsed = true;
+      this.updateCollapsedState();
+      this.onToggleCollapse(true);
+    }
+  }
+
+  updateCollapsedState() {
+    const card = this.container.querySelector('#comparison-card');
+    if (!card) return;
+
+    card.classList.toggle('is-collapsed', this.isCollapsed);
+
+    const expandBtn = this.container.querySelector('#expand-btn');
+    const collapseBtn = this.container.querySelector('#collapse-btn');
+    if (expandBtn) expandBtn.setAttribute('aria-expanded', String(!this.isCollapsed));
+    if (collapseBtn) collapseBtn.setAttribute('aria-expanded', String(!this.isCollapsed));
+  }
+
   render() {
     this.container.innerHTML = `
       <!-- 플로팅 상태 뱃지 (위도 & 배율) -->
@@ -46,11 +86,37 @@ export class ComparisonSheet {
       </div>
 
       <!-- 하단 메인 비교 패널 -->
-      <div class="comparison-card" id="comparison-card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="title-icon">📊</span>
-            <span>국가 크기 상세 비교</span>
+      <div class="comparison-card ${this.isCollapsed ? 'is-collapsed' : ''}" id="comparison-card">
+        <!-- 상단 바텀시트 드래그 핸들 (#14) -->
+        <div class="sheet-handle-bar" id="sheet-toggle-handle" title="비교 카드 접기/펼치기">
+          <span class="sheet-handle"></span>
+        </div>
+
+        <!-- 1줄 요약 바 (접힌 상태에서 표시, #14) -->
+        <div class="collapsed-summary" id="collapsed-summary" title="탭하여 상세 비교 보기">
+          <div class="summary-text" id="collapsed-summary-text">
+            <span class="summary-flags">🇰🇷 vs 🌐</span>
+            <span class="summary-names">대한민국 크기 비교</span>
+            <span class="summary-dot">·</span>
+            <span class="summary-ratio" id="collapsed-ratio">-</span>
+          </div>
+          <button class="sheet-toggle-btn" id="expand-btn" type="button" aria-label="상세 비교 펼치기" aria-expanded="${!this.isCollapsed}">
+            <span>상세보기</span>
+            <span class="toggle-icon">▲</span>
+          </button>
+        </div>
+
+        <!-- 펼쳐진 상태 헤더 (#14) -->
+        <div class="card-header" id="expanded-header">
+          <div class="card-title-group">
+            <div class="card-title">
+              <span class="title-icon">📊</span>
+              <span>국가 크기 상세 비교</span>
+            </div>
+            <button class="sheet-toggle-btn collapse-btn" id="collapse-btn" type="button" aria-label="상세 비교 접기" aria-expanded="${!this.isCollapsed}">
+              <span>접기</span>
+              <span class="toggle-icon">▼</span>
+            </button>
           </div>
           <div class="quick-presets">
             <span class="preset-label">추천 비교:</span>
@@ -63,7 +129,7 @@ export class ComparisonSheet {
 
         <div class="comparison-body" id="comparison-body">
           <div class="empty-state" id="empty-state">
-            지도에서 다른 나라를 터치하거나 위 버튼을 눌러 비교해 보세요!
+            지도에서 국가를 터치하거나 상단 검색창에서 비교할 나라를 선택해 보세요.
           </div>
 
           <div class="comparison-details" id="comparison-details" style="display: none;">
@@ -128,7 +194,33 @@ export class ComparisonSheet {
       </div>
     `;
 
-    // 이벤트 리스너 바인딩
+    // #14: 바텀시트 접기/펼치기 리스너 바인딩
+    const handleBar = this.container.querySelector('#sheet-toggle-handle');
+    if (handleBar) {
+      handleBar.addEventListener('click', () => this.toggleCollapse());
+    }
+
+    const collapsedSummary = this.container.querySelector('#collapsed-summary');
+    if (collapsedSummary) {
+      collapsedSummary.addEventListener('click', () => this.expand());
+    }
+
+    const expandBtn = this.container.querySelector('#expand-btn');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.expand();
+      });
+    }
+
+    const collapseBtn = this.container.querySelector('#collapse-btn');
+    if (collapseBtn) {
+      collapseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.collapse();
+      });
+    }
+
     const resetBtn = this.container.querySelector('#reset-position-btn');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => this.onResetClick());
@@ -158,21 +250,44 @@ export class ComparisonSheet {
     scaleElem.textContent = `지도 축척: ${this.currentScaleInfo.scaleFactor.toFixed(2)}배 (면적 ${this.currentScaleInfo.areaMultiplier.toFixed(1)}배)`;
   }
 
+  /** #13: 지금 비교 중인 나라와 같은 추천 칩을 강조하고, 휴대폰의 가로 스크롤에서도 보이게 한다. */
+  updateActivePreset() {
+    const activeIso = this.countryB ? this.countryB.iso_a3 : null;
+    this.container.querySelectorAll('.preset-btn').forEach(btn => {
+      const isActive = btn.getAttribute('data-iso') === activeIso;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+      if (isActive) {
+        const row = btn.parentElement;
+        if (row && row.scrollWidth > row.clientWidth) {
+          row.scrollTo({ left: btn.offsetLeft - row.offsetLeft - 18, behavior: 'smooth' });
+        }
+      }
+    });
+  }
+
   update() {
     this.updateScaleBadge();
+    this.updateActivePreset();
 
     const emptyState = this.container.querySelector('#empty-state');
     const details = this.container.querySelector('#comparison-details');
-    if (!emptyState || !details) return;
+    const collapsedSummaryText = this.container.querySelector('#collapsed-summary-text');
 
     if (!this.countryA || !this.countryB) {
-      emptyState.style.display = 'block';
-      details.style.display = 'none';
+      if (emptyState) emptyState.style.display = 'block';
+      if (details) details.style.display = 'none';
+      if (collapsedSummaryText) {
+        collapsedSummaryText.innerHTML = `
+          <span class="summary-flags">🇰🇷 vs 🌐</span>
+          <span class="summary-names">비교할 국가를 선택해 주세요</span>
+        `;
+      }
       return;
     }
 
-    emptyState.style.display = 'none';
-    details.style.display = 'block';
+    if (emptyState) emptyState.style.display = 'none';
+    if (details) details.style.display = 'block';
 
     // 국가 A (한국)
     const nameA = this.countryA.name_ko || this.countryA.name_en;
@@ -199,11 +314,26 @@ export class ComparisonSheet {
     // 비율 계산
     const ratio = areaB / areaA;
     const ratioSummary = this.container.querySelector('#ratio-summary');
+    let ratioShortText = '';
     if (ratio >= 1) {
-      ratioSummary.textContent = `${nameB}은(는) ${nameA}의 약 ${ratio.toFixed(1)}배`;
+      ratioShortText = `약 ${ratio.toFixed(1)}배`;
+      if (ratioSummary) ratioSummary.textContent = `${nameB}은(는) ${nameA}의 ${ratioShortText}`;
     } else {
       const inverseRatio = (areaA / areaB).toFixed(1);
-      ratioSummary.textContent = `${nameA}은(는) ${nameB}의 약 ${inverseRatio}배`;
+      ratioShortText = `약 1/${inverseRatio}배`;
+      if (ratioSummary) ratioSummary.textContent = `${nameA}은(는) ${nameB}의 약 ${inverseRatio}배`;
+    }
+
+    if (collapsedSummaryText) {
+      collapsedSummaryText.innerHTML = `
+        <span class="summary-flag-a">${flagA}</span>
+        <span class="summary-name-a">${nameA}</span>
+        <span class="summary-vs">VS</span>
+        <span class="summary-flag-b">${flagB}</span>
+        <span class="summary-name-b">${nameB}</span>
+        <span class="summary-dot">·</span>
+        <strong class="summary-ratio">${ratioShortText}</strong>
+      `;
     }
 
     // 비교 바 너비
@@ -214,12 +344,12 @@ export class ComparisonSheet {
     const barA = this.container.querySelector('#bar-a');
     const barB = this.container.querySelector('#bar-b');
     const labelA = this.container.querySelector('#bar-label-a');
-    const labelLabelB = this.container.querySelector('#bar-label-b');
+    const labelB = this.container.querySelector('#bar-label-b');
 
-    barA.style.width = `${pctA}%`;
-    barB.style.width = `${pctB}%`;
-    labelA.textContent = `${nameA}: ${areaA.toLocaleString()} km²`;
-    labelLabelB.textContent = `${nameB}: ${areaB.toLocaleString()} km²`;
+    if (barA) barA.style.width = `${pctA}%`;
+    if (barB) barB.style.width = `${pctB}%`;
+    if (labelA) labelA.textContent = `${nameA}: ${areaA.toLocaleString()} km²`;
+    if (labelB) labelB.textContent = `${nameB}: ${areaB.toLocaleString()} km²`;
 
     // 인사이트 팁 메시지
     const insightText = this.container.querySelector('#insight-text');

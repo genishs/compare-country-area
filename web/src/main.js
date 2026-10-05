@@ -1,3 +1,4 @@
+import './utils/canvasOptimization';
 import { MapManager } from './map/mapManager';
 import { ComparisonSheet } from './ui/comparisonSheet';
 
@@ -19,7 +20,11 @@ function measureFitPadding() {
   if (mapRect.width === 0 || mapRect.height === 0) return null;
 
   const GAP = 12;
-  const SIDE = 16;
+  const computed = typeof window !== 'undefined' ? getComputedStyle(document.documentElement) : null;
+  const safeLeft = computed ? (parseFloat(computed.getPropertyValue('--safe-area-left')) || 0) : 0;
+  const safeRight = computed ? (parseFloat(computed.getPropertyValue('--safe-area-right')) || 0) : 0;
+  const sideLeft = Math.max(16, Math.round(safeLeft + 12));
+  const sideRight = Math.max(16, Math.round(safeRight + 12));
 
   const header = document.querySelector('.app-header');
   const headerBottom = header ? header.getBoundingClientRect().bottom : mapRect.top;
@@ -45,7 +50,7 @@ function measureFitPadding() {
     bottom = Math.max(0, bottom - overflow);
     top = Math.max(0, Math.min(top, mapRect.height - minVisible - bottom));
   }
-  return [top, SIDE, bottom, SIDE];
+  return [top, sideRight, bottom, sideLeft];
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -145,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
           searchInput.value = '';
           // 고른 뒤에는 키보드를 내려 지도와 비교 카드가 보이게 한다
           searchInput.blur();
+          document.body.classList.remove('is-searching');
         });
 
         searchResults.appendChild(item);
@@ -153,10 +159,24 @@ document.addEventListener('DOMContentLoaded', () => {
       searchResults.style.display = 'block';
     });
 
+    // #14: 검색창 포커스 시 가상 키보드와 하단 카드 겹침/압축 방지
+    searchInput.addEventListener('focus', () => {
+      document.body.classList.add('is-searching');
+    });
+
+    searchInput.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (document.activeElement !== searchInput) {
+          document.body.classList.remove('is-searching');
+        }
+      }, 200);
+    });
+
     // 외부 클릭 시 검색창 닫기
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.search-container')) {
         searchResults.style.display = 'none';
+        document.body.classList.remove('is-searching');
       }
     });
   }

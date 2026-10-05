@@ -1,6 +1,10 @@
 @import "ol/ol.css";
 
 :root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
   --primary: #2563eb;
   --primary-dark: #1d4ed8;
   --korea-color: #16a34a;
@@ -48,18 +52,18 @@ body, html {
 }
 
 /* OpenLayers 줌 버튼: 기본 위치(왼쪽 위 0.5em)는 상단 제목 카드 밑에 깔려 보이지 않으므로
-   헤더 아래로 내린다 (헤더는 화면 폭에 따라 높이 48~62px, top 16px) */
+   헤더 아래로 내린다 (상태바/노치 safe-area 반영) */
 .ol-zoom {
-  top: 88px;
-  left: 16px;
+  top: calc(88px + var(--safe-area-top));
+  left: calc(16px + var(--safe-area-left));
 }
 
-/* 상단 네비게이션 바 */
+/* 상단 네비게이션 바 (#2: 상태바/노치 safe-area 반영) */
 .app-header {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
+  top: calc(16px + var(--safe-area-top));
+  left: calc(16px + var(--safe-area-left));
+  right: calc(16px + var(--safe-area-right));
   z-index: 10;
   display: flex;
   align-items: center;
@@ -177,17 +181,29 @@ body, html {
   color: var(--text-muted);
 }
 
-/* 플로팅 상태 뱃지 (위도/배율 & 리셋) */
-.scale-badge-container {
+/* 하단 UI 컨테이너 (축척 배지 줄 + 비교 카드) (#2: safe-area 반영) */
+#sheet-container {
   position: absolute;
-  bottom: 230px;
-  left: 16px;
-  right: 16px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+  padding: 0 calc(14px + var(--safe-area-right)) calc(26px + var(--safe-area-bottom)) calc(14px + var(--safe-area-left));
+}
+
+/* 플로팅 상태 뱃지 (위도/배율 & 리셋) — 카드 바로 위에 항상 위치 */
+.scale-badge-container {
+  width: 100%;
+  max-width: 800px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 8px;
   pointer-events: none;
-  z-index: 9;
 }
 
 .scale-badge {
@@ -235,12 +251,12 @@ body, html {
   transform: translateY(-1px);
 }
 
-/* R-8: 데이터 로드 실패 안내 배너 */
+/* R-8: 데이터 로드 실패 안내 배너 (#2: safe-area 반영) */
 .data-error-banner {
   position: absolute;
-  top: 84px;
-  left: 16px;
-  right: 16px;
+  top: calc(84px + var(--safe-area-top));
+  left: calc(16px + var(--safe-area-left));
+  right: calc(16px + var(--safe-area-right));
   z-index: 30;
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -256,7 +272,7 @@ body, html {
 /* 국가 데이터를 읽는 동안 띄우는 안내 (로드가 끝나거나 실패하면 사라짐) */
 .data-loading-notice {
   position: absolute;
-  top: 84px;
+  top: calc(84px + var(--safe-area-top));
   left: 50%;
   transform: translateX(-50%);
   z-index: 30;
@@ -271,24 +287,169 @@ body, html {
   pointer-events: none;
 }
 
-/* 하단 비교 카드 */
-/* R-4: OSM 저작자표시(.ol-attribution)는 지도 우측 하단에 뜨는데, 기존 bottom:14px
-   카드가 그 위를 그대로 덮어 ODbL 저작자표시 요건을 위반할 소지가 있었다.
-   attribution 컨트롤(기본 약 22px 높이 + 여백)이 가리지 않도록 카드를 올린다. */
-.comparison-card {
+/* 오프라인 및 타일 로드 실패 안내 배너 (#8) */
+.offline-notice-banner {
   position: absolute;
-  bottom: 34px;
-  left: 14px;
-  right: 14px;
+  top: calc(84px + var(--safe-area-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  background: rgba(30, 41, 59, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* OpenLayers 저작자 표기: 내비게이션 바 / 제스처 바에 가려지지 않도록 safe-area-bottom 반영 */
+.ol-attribution {
+  bottom: calc(4px + var(--safe-area-bottom)) !important;
+  right: calc(6px + var(--safe-area-right)) !important;
+}
+
+/* 하단 비교 카드 */
+/* R-4: 시트 아래 여백(26px + safe-area-bottom)이 OSM 저작자표시(4px + safe-area-bottom, 높이 약 18px)보다 위에 카드를 둔다 */
+.comparison-card {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   border: 1px solid rgba(255, 255, 255, 0.8);
   padding: 14px 18px;
-  z-index: 10;
-  max-width: 800px;
-  margin: 0 auto;
+  pointer-events: auto;
+  transition: padding 0.2s ease, max-height 0.25s ease;
+}
+
+/* 바텀시트 상단 핸들 (#14) */
+.sheet-handle-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 0 6px 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: #cbd5e1;
+  transition: background 0.15s ease;
+}
+
+.sheet-handle-bar:hover .sheet-handle,
+.sheet-handle-bar:active .sheet-handle {
+  background: #94a3b8;
+}
+
+/* 1줄 요약 바 (접힌 상태에서 표시, #14) */
+.collapsed-summary {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.summary-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.summary-flags {
+  font-size: 14px;
+}
+
+.summary-vs {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--primary);
+  background: #eff6ff;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.summary-dot {
+  color: var(--text-muted);
+}
+
+.summary-ratio {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* 접기/펼치기 토글 버튼 (#14) */
+.sheet-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  background: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sheet-toggle-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.sheet-toggle-btn:active {
+  transform: scale(0.96);
+}
+
+.toggle-icon {
+  font-size: 9px;
+}
+
+/* 접힌 상태 레이아웃 (#14) */
+.comparison-card.is-collapsed {
+  padding: 4px 16px 8px 16px;
+}
+
+.comparison-card.is-collapsed .collapsed-summary {
+  display: flex;
+}
+
+.comparison-card.is-collapsed .card-header,
+.comparison-card.is-collapsed .comparison-body {
+  display: none;
+}
+
+.card-title-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .card-header {
@@ -328,14 +489,30 @@ body, html {
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
+  color: var(--text-main);
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.15s ease;
 }
 
-.preset-btn:hover {
+/* 지금 비교 중인 나라의 칩 (#13) */
+.preset-btn.is-active {
   background: var(--primary);
   color: #ffffff;
   border-color: var(--primary);
+}
+
+/* 터치 기기에서는 :hover가 탭 뒤에도 남아 선택된 것처럼 보이므로 마우스 환경에서만 적용 */
+@media (hover: hover) and (pointer: fine) {
+  .preset-btn:hover {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+  }
+}
+
+.preset-btn:active {
+  transform: scale(0.96);
 }
 
 .empty-state {
@@ -526,8 +703,30 @@ body, html {
   .search-container {
     width: 170px;
   }
+  #sheet-container {
+    padding: 0 calc(10px + var(--safe-area-right)) calc(26px + var(--safe-area-bottom)) calc(10px + var(--safe-area-left));
+  }
   .scale-badge-container {
-    bottom: 270px;
+    margin-bottom: 6px;
+  }
+  .scale-badge {
+    padding: 6px 10px;
+    font-size: 11px;
+    gap: 6px;
+    /* 좁은 폭에서는 위도/축척 단위로만 줄바꿈 */
+    flex-wrap: wrap;
+    row-gap: 2px;
+    min-width: 0;
+  }
+  .badge-lat,
+  .badge-scale {
+    white-space: nowrap;
+  }
+  .reset-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .countries-grid {
     grid-template-columns: 1fr;
@@ -536,7 +735,87 @@ body, html {
   .vs-badge {
     display: none;
   }
+  /* #13: 숨기지 않고 제목 아래 한 줄 가로 스크롤 칩으로 둔다 (엄지로 한 번에 전환) */
+  .card-header {
+    margin-bottom: 10px;
+    row-gap: 6px;
+  }
   .quick-presets {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* 칩이 카드 가장자리(.comparison-card 좌우 패딩 18px)까지 이어져 잘려 보이도록 해 옆으로 더 있음을 알린다 */
+    width: calc(100% + 36px);
+    margin: 0 -18px;
+    padding: 2px 18px 4px;
+    scroll-padding: 0 18px;
+  }
+  .quick-presets::-webkit-scrollbar {
     display: none;
+  }
+  .preset-label {
+    display: none;
+  }
+  .preset-btn {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 6px 14px;
+    font-size: 13px;
+  }
+}
+
+/* #14: 검색창 포커스(가상 키보드 활성화) 시 하단 시트 자동 숨김 */
+body.is-searching #sheet-container {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(30px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* #14: 가로 모드 휴대폰(높이 520px 이하) 화면 최적화 */
+@media (orientation: landscape) and (max-height: 520px) {
+  .app-header {
+    padding: 4px 12px;
+    gap: 8px;
+  }
+  .brand-card {
+    padding: 4px 8px;
+  }
+  .brand-logo {
+    font-size: 18px;
+  }
+  .brand-title {
+    font-size: 13px;
+  }
+  .brand-subtitle {
+    display: none;
+  }
+  .search-container {
+    width: 180px;
+  }
+  .search-input {
+    padding: 4px 8px 4px 28px;
+    font-size: 12px;
+  }
+  #sheet-container {
+    padding: 0 calc(12px + var(--safe-area-right)) calc(26px + var(--safe-area-bottom)) calc(12px + var(--safe-area-left));
+  }
+  .scale-badge-container {
+    margin-bottom: 4px;
+  }
+  .scale-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .reset-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .comparison-card {
+    max-height: 55vh;
+    overflow-y: auto;
   }
 }
