@@ -146,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
           searchInput.value = '';
           // 고른 뒤에는 키보드를 내려 지도와 비교 카드가 보이게 한다
           searchInput.blur();
+          document.body.classList.remove('is-searching');
         });
 
         searchResults.appendChild(item);
@@ -154,10 +155,24 @@ document.addEventListener('DOMContentLoaded', () => {
       searchResults.style.display = 'block';
     });
 
+    // #14: 검색창 포커스 시 가상 키보드와 하단 카드 겹침/압축 방지
+    searchInput.addEventListener('focus', () => {
+      document.body.classList.add('is-searching');
+    });
+
+    searchInput.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (document.activeElement !== searchInput) {
+          document.body.classList.remove('is-searching');
+        }
+      }, 200);
+    });
+
     // 외부 클릭 시 검색창 닫기
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.search-container')) {
         searchResults.style.display = 'none';
+        document.body.classList.remove('is-searching');
       }
     });
   }
