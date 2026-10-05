@@ -158,8 +158,25 @@ export class ComparisonSheet {
     scaleElem.textContent = `지도 축척: ${this.currentScaleInfo.scaleFactor.toFixed(2)}배 (면적 ${this.currentScaleInfo.areaMultiplier.toFixed(1)}배)`;
   }
 
+  /** #13: 지금 비교 중인 나라와 같은 추천 칩을 강조하고, 휴대폰의 가로 스크롤에서도 보이게 한다. */
+  updateActivePreset() {
+    const activeIso = this.countryB ? this.countryB.iso_a3 : null;
+    this.container.querySelectorAll('.preset-btn').forEach(btn => {
+      const isActive = btn.getAttribute('data-iso') === activeIso;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+      if (isActive) {
+        const row = btn.parentElement;
+        if (row && row.scrollWidth > row.clientWidth) {
+          row.scrollTo({ left: btn.offsetLeft - row.offsetLeft - 18, behavior: 'smooth' });
+        }
+      }
+    });
+  }
+
   update() {
     this.updateScaleBadge();
+    this.updateActivePreset();
 
     const emptyState = this.container.querySelector('#empty-state');
     const details = this.container.querySelector('#comparison-details');

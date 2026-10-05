@@ -335,14 +335,30 @@ body, html {
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
+  color: var(--text-main);
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.15s ease;
 }
 
-.preset-btn:hover {
+/* 지금 비교 중인 나라의 칩 (#13) */
+.preset-btn.is-active {
   background: var(--primary);
   color: #ffffff;
   border-color: var(--primary);
+}
+
+/* 터치 기기에서는 :hover가 탭 뒤에도 남아 선택된 것처럼 보이므로 마우스 환경에서만 적용 */
+@media (hover: hover) and (pointer: fine) {
+  .preset-btn:hover {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+  }
+}
+
+.preset-btn:active {
+  transform: scale(0.96);
 }
 
 .empty-state {
@@ -565,7 +581,34 @@ body, html {
   .vs-badge {
     display: none;
   }
+  /* #13: 숨기지 않고 제목 아래 한 줄 가로 스크롤 칩으로 둔다 (엄지로 한 번에 전환) */
+  .card-header {
+    margin-bottom: 10px;
+    row-gap: 6px;
+  }
   .quick-presets {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* 칩이 카드 가장자리(.comparison-card 좌우 패딩 18px)까지 이어져 잘려 보이도록 해 옆으로 더 있음을 알린다 */
+    width: calc(100% + 36px);
+    margin: 0 -18px;
+    padding: 2px 18px 4px;
+    scroll-padding: 0 18px;
+  }
+  .quick-presets::-webkit-scrollbar {
     display: none;
+  }
+  .preset-label {
+    display: none;
+  }
+  .preset-btn {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 6px 14px;
+    font-size: 13px;
   }
 }
