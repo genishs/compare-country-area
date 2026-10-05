@@ -313,14 +313,15 @@ export class ComparisonSheet {
 
     // 비율 계산
     const ratio = areaB / areaA;
+    const ratioSummary = this.container.querySelector('#ratio-summary');
     let ratioShortText = '';
     if (ratio >= 1) {
       ratioShortText = `약 ${ratio.toFixed(1)}배`;
-      ratioSummary.textContent = `${nameB}은(는) ${nameA}의 ${ratioShortText}`;
+      if (ratioSummary) ratioSummary.textContent = `${nameB}은(는) ${nameA}의 ${ratioShortText}`;
     } else {
       const inverseRatio = (areaA / areaB).toFixed(1);
       ratioShortText = `약 1/${inverseRatio}배`;
-      ratioSummary.textContent = `${nameA}은(는) ${nameB}의 약 ${inverseRatio}배`;
+      if (ratioSummary) ratioSummary.textContent = `${nameA}은(는) ${nameB}의 약 ${inverseRatio}배`;
     }
 
     if (collapsedSummaryText) {
@@ -343,12 +344,12 @@ export class ComparisonSheet {
     const barA = this.container.querySelector('#bar-a');
     const barB = this.container.querySelector('#bar-b');
     const labelA = this.container.querySelector('#bar-label-a');
-    const labelLabelB = this.container.querySelector('#bar-label-b');
+    const labelB = this.container.querySelector('#bar-label-b');
 
-    barA.style.width = `${pctA}%`;
-    barB.style.width = `${pctB}%`;
-    labelA.textContent = `${nameA}: ${areaA.toLocaleString()} km²`;
-    labelLabelB.textContent = `${nameB}: ${areaB.toLocaleString()} km²`;
+    if (barA) barA.style.width = `${pctA}%`;
+    if (barB) barB.style.width = `${pctB}%`;
+    if (labelA) labelA.textContent = `${nameA}: ${areaA.toLocaleString()} km²`;
+    if (labelB) labelB.textContent = `${nameB}: ${areaB.toLocaleString()} km²`;
 
     // 인사이트 팁 메시지
     const insightText = this.container.querySelector('#insight-text');

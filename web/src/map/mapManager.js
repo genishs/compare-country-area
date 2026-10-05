@@ -302,14 +302,13 @@ export class MapManager {
     this.hideLoadingNotice();
 
     console.error('[MapManager] 국가 데이터 로드 실패:', message);
-    console.trace('[MapManager] handleDataLoadError stack trace');
 
     const target = document.getElementById(this.targetId);
     const host = (target && target.parentElement) || document.body;
 
     const banner = document.createElement('div');
     banner.className = 'data-error-banner';
-    banner.textContent = `[DEBUG: ${message}] 국가 경계 데이터를 불러오지 못했습니다. 앱을 재시작하거나 네트워크 상태를 확인해 주세요.`;
+    banner.textContent = message;
     host.appendChild(banner);
   }
 
