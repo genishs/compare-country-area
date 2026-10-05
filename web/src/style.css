@@ -177,17 +177,29 @@ body, html {
   color: var(--text-muted);
 }
 
-/* 플로팅 상태 뱃지 (위도/배율 & 리셋) */
-.scale-badge-container {
+/* 하단 UI 컨테이너 (축척 배지 줄 + 비교 카드) */
+#sheet-container {
   position: absolute;
-  bottom: 230px;
-  left: 16px;
-  right: 16px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+  padding: 0 14px 16px 14px;
+}
+
+/* 플로팅 상태 뱃지 (위도/배율 & 리셋) — 카드 바로 위에 항상 위치 */
+.scale-badge-container {
+  width: 100%;
+  max-width: 800px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 8px;
   pointer-events: none;
-  z-index: 9;
 }
 
 .scale-badge {
@@ -272,23 +284,18 @@ body, html {
 }
 
 /* 하단 비교 카드 */
-/* R-4: OSM 저작자표시(.ol-attribution)는 지도 우측 하단에 뜨는데, 기존 bottom:14px
-   카드가 그 위를 그대로 덮어 ODbL 저작자표시 요건을 위반할 소지가 있었다.
-   attribution 컨트롤(기본 약 22px 높이 + 여백)이 가리지 않도록 카드를 올린다. */
+/* R-4: OSM 저작자표시(.ol-attribution)가 가리지 않도록 #sheet-container의 bottom 여백 위에 위치 */
 .comparison-card {
-  position: absolute;
-  bottom: 34px;
-  left: 14px;
-  right: 14px;
+  position: relative;
+  width: 100%;
+  max-width: 800px;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   border: 1px solid rgba(255, 255, 255, 0.8);
   padding: 14px 18px;
-  z-index: 10;
-  max-width: 800px;
-  margin: 0 auto;
+  pointer-events: auto;
 }
 
 .card-header {
@@ -526,8 +533,30 @@ body, html {
   .search-container {
     width: 170px;
   }
+  #sheet-container {
+    padding: 0 10px 24px 10px;
+  }
   .scale-badge-container {
-    bottom: 270px;
+    margin-bottom: 6px;
+  }
+  .scale-badge {
+    padding: 6px 10px;
+    font-size: 11px;
+    gap: 6px;
+    /* 좁은 폭에서는 위도/축척 단위로만 줄바꿈 */
+    flex-wrap: wrap;
+    row-gap: 2px;
+    min-width: 0;
+  }
+  .badge-lat,
+  .badge-scale {
+    white-space: nowrap;
+  }
+  .reset-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .countries-grid {
     grid-template-columns: 1fr;

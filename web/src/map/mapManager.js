@@ -363,11 +363,11 @@ export class MapManager {
       isLatitudeClamped: false
     });
 
-    // 뷰를 한국 중심으로 부드럽게 이동
-    this.view.animate({
-      center: fromLonLat(KOREA_CENTER_LONLAT),
-      zoom: KOREA_HOME_ZOOM,
-      duration: 600
+    // #10: 단순 중심 이동 대신 하단 카드 패딩을 감안하는 fitToView를 써서
+    // 휴대폰 세로 모드에서도 한국이 카드 밑에 가리지 않고 상단 가시 영역에 보이게 한다.
+    this.fitToView(this.baseKoreaGeometry.getExtent(), {
+      duration: 600,
+      maxZoom: KOREA_HOME_ZOOM
     });
   }
 
