@@ -1,3 +1,4 @@
+import './utils/canvasOptimization';
 import { MapManager } from './map/mapManager';
 import { ComparisonSheet } from './ui/comparisonSheet';
 
