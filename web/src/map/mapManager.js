@@ -7,7 +7,7 @@ import VectorSource from 'ol/source/Vector';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Style, Fill, Stroke, Circle as CircleStyle, Text } from 'ol/style';
 import { fromLonLat, toLonLat, transformExtent } from 'ol/proj';
-import { createEmpty, extend } from 'ol/extent';
+import { createEmpty, extend, isEmpty } from 'ol/extent';
 import Translate from 'ol/interaction/Translate';
 import Collection from 'ol/Collection';
 import Feature from 'ol/Feature';
@@ -17,6 +17,59 @@ import {
   getLatitudeFrom3857,
   scaleGeometryForLatitude
 } from '../transform/mercatorScale';
+
+/**
+ * 주요 국가 별칭(Alias) 사전 (#8)
+ * '한국', '남한' -> 대한민국(KOR), '미국' -> USA, '영국' -> GBR 등
+ * 사용자 검색어와 데이터 표기명 간 차이를 매핑한다.
+ */
+export const COUNTRY_ALIASES = {
+  KOR: ['한국', '남한', 'korea', 'south korea', 'rok', '우리나라'],
+  PRK: ['북한', '조선', 'north korea', 'dprk'],
+  USA: ['미국', '미합중국', 'usa', 'us', 'america', 'united states'],
+  GBR: ['영국', '잉글랜드', 'uk', 'britain', 'great britain', 'england'],
+  RUS: ['러시아', '소련', 'russia', 'russian federation'],
+  DEU: ['독일', '독일연방공화국', 'germany', 'deutschland'],
+  JPN: ['일본', '열도', 'japan', 'nippon', 'nihon'],
+  CHN: ['중국', '중화인민공화국', '중공', 'china'],
+  FRA: ['프랑스', '불란서', 'france'],
+  NLD: ['네덜란드', '화란', 'netherlands', 'holland'],
+  NZL: ['뉴질랜드', 'new zealand'],
+  AUS: ['호주', '오스트레일리아', 'australia'],
+  CHE: ['스위스', 'switzerland', 'swiss'],
+  TWN: ['대만', '타이완', 'taiwan', 'roc'],
+  TUR: ['터키', '튀르키예', 'turkey', 'turkiye'],
+  ARE: ['uae', '아랍에미리트', 'united arab emirates'],
+  VNM: ['베트남', '월남', 'vietnam'],
+  PHL: ['필리핀', 'philippines'],
+  THA: ['태국', '타이', 'thailand'],
+  IND: ['인도', 'india'],
+  IDN: ['인도네시아', 'indonesia'],
+  EGY: ['이집트', '애급', 'egypt'],
+  ZAF: ['남아공', '남아프리카', '남아프리카공화국', 'south africa'],
+  GRL: ['그린란드', '그린랜드', 'greenland'],
+  CAN: ['캐나다', 'canada'],
+  MEX: ['멕시코', 'mexico'],
+  BRA: ['브라질', 'brazil'],
+  ARG: ['아르헨티나', 'argentina'],
+  ESP: ['스페인', '에스파냐', 'spain'],
+  ITA: ['이탈리아', '이태리', 'italy'],
+  POL: ['폴란드', 'poland'],
+  SWE: ['스웨덴', 'sweden'],
+  NOR: ['노르웨이', 'norway'],
+  FIN: ['핀란드', 'finland'],
+  DNK: ['덴마크', 'denmark'],
+  UKR: ['우크라이나', 'ukraine'],
+  SAU: ['사우디', '사우디아라비아', 'saudi arabia'],
+  IRN: ['이란', 'iran'],
+  IRQ: ['이라크', 'iraq'],
+  ISR: ['이스라엘', 'israel'],
+  SGP: ['싱가포르', '싱가폴', 'singapore'],
+  MYS: ['말레이시아', 'malaysia'],
+  MNG: ['몽골', '몽고', 'mongolia'],
+  KAZ: ['카자흐스탄', 'kazakhstan'],
+  FJI: ['피지', 'fiji']
+};
 
 // R-9: 스타일 함수가 feature 인자를 쓰지 않으면서도 매 렌더 프레임마다 새 Style
 // 인스턴스를 만들면 177개 폴리곤 x 프레임마다 GC 압박이 생긴다. 값이 고정이므로
@@ -146,6 +199,7 @@ export class MapManager {
     this.setupInteractions();
     this.showLoadingNotice();
     this.loadInitialKorea();
+    this.setupNetworkMonitoring();
   }
 
   /** view.fit에 줄 padding [위, 오른쪽, 아래, 왼쪽] */
@@ -411,6 +465,118 @@ export class MapManager {
   }
 
   /**
+   * 오프라인 상태 및 OSM 타일 로드 실패를 감지하여 사용자에게 안내 배너를 제공 (#8)
+   */
+  setupNetworkMonitoring() {
+    let offlineBanner = null;
+    let tileErrorCount = 0;
+
+    const showBanner = (msg) => {
+      if (offlineBanner) {
+        offlineBanner.textContent = msg;
+        return;
+      }
+      const target = document.getElementById(this.targetId);
+      const host = (target && target.parentElement) || document.body;
+      offlineBanner = document.createElement('div');
+      offlineBanner.className = 'offline-notice-banner';
+      offlineBanner.setAttribute('role', 'status');
+      offlineBanner.textContent = msg;
+      host.appendChild(offlineBanner);
+    };
+
+    const hideBanner = () => {
+      if (offlineBanner) {
+        offlineBanner.remove();
+        offlineBanner = null;
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('offline', () => {
+        showBanner('📡 오프라인 상태입니다. 배경 지도가 표시되지 않을 수 있습니다.');
+      });
+
+      window.addEventListener('online', () => {
+        hideBanner();
+        tileErrorCount = 0;
+      });
+
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        showBanner('📡 오프라인 상태입니다. 배경 지도가 표시되지 않을 수 있습니다.');
+      }
+    }
+
+    if (this.osmLayer) {
+      const source = this.osmLayer.getSource();
+      source.on('tileloaderror', () => {
+        tileErrorCount++;
+        // 배경 OSM 타일 로드 실패가 3회 이상 누적되면 안내 표시
+        if (tileErrorCount >= 3 && !offlineBanner) {
+          showBanner('🌐 지도 타일을 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.');
+        }
+      });
+      source.on('tileloadend', () => {
+        tileErrorCount = 0;
+        if (typeof navigator !== 'undefined' && navigator.onLine !== false && offlineBanner) {
+          hideBanner();
+        }
+      });
+    }
+  }
+
+  /**
+   * 국가 피처의 적정 표시 범위(Extent) 산출 (#8)
+   * 날짜변경선(180° 자오선)에 걸쳐 있는 국가(러시아, 미국, 피지, 뉴질랜드 등)는
+   * 동반구(+180)와 서반구(-180) 양쪽에 걸쳐 있어 단순 getExtent() 계산 시
+   * 전 지구 폭(약 4,000만m)으로 확장되어 뷰포트가 과도하게 축소(Zoom 2)된다.
+   * 주 영토(면적이 큰 반구 쪽 폴리곤 군집)의 Extent를 산출하여 보정한다.
+   *
+   * @param {import('ol/Feature').default} feature
+   * @returns {import('ol/extent').Extent}
+   */
+  getCountryFitExtent(feature) {
+    const geom = feature.getGeometry();
+    const rawExtent = geom.getExtent();
+    const width = rawExtent[2] - rawExtent[0];
+
+    // EPSG:3857에서 지구 반구 폭(약 180도) = 20,037,508m
+    const HALF_WORLD_WIDTH = 20037508;
+    if (width > HALF_WORLD_WIDTH && geom.getType() === 'MultiPolygon') {
+      const polygons = geom.getPolygons();
+      let eastArea = 0;
+      let westArea = 0;
+      const eastExtent = createEmpty();
+      const westExtent = createEmpty();
+
+      for (const poly of polygons) {
+        const ext = poly.getExtent();
+        const polyWidth = ext[2] - ext[0];
+        const polyHeight = ext[3] - ext[1];
+        const area = polyWidth * polyHeight;
+        const midX = (ext[0] + ext[2]) / 2;
+
+        if (midX >= 0) {
+          eastArea += area;
+          extend(eastExtent, ext);
+        } else {
+          westArea += area;
+          extend(westExtent, ext);
+        }
+      }
+
+      if (eastArea >= westArea && !isEmpty(eastExtent)) {
+        return eastExtent;
+      }
+      if (westArea > eastArea && !isEmpty(westExtent)) {
+        return westExtent;
+      }
+    }
+
+    return rawExtent;
+  }
+
+  /**
    * 비교 대상 국가를 고르고 그 나라로 지도를 옮긴다.
    * @param {string} isoA3 국가 코드 (iso_a3 또는 iso_a2)
    * @param {{withKorea?: boolean}} [options] withKorea가 true면 한국과 대상 국가가 함께 보이는 범위로 맞춘다
@@ -435,9 +601,9 @@ export class MapManager {
 
       this.setTargetCountry(target);
 
-      // 대상 국가로 뷰포트 이동. getExtent()는 도형이 캐시한 배열이라 직접 늘리면 안 되므로 새 범위에 합친다.
+      // 대상 국가로 뷰포트 이동. 날짜변경선에 걸친 국가(러시아/미국 등)는 getCountryFitExtent로 보정.
       const extent = createEmpty();
-      extend(extent, target.getGeometry().getExtent());
+      extend(extent, this.getCountryFitExtent(target));
       if (withKorea && this.activeKoreaFeature) {
         extend(extent, this.activeKoreaFeature.getGeometry().getExtent());
       }
@@ -445,18 +611,46 @@ export class MapManager {
     }
   }
 
+  /**
+   * 국가 검색 (국문명, 영문명, ISO 코드 및 별칭 지원, #8)
+   * '한국', '남한' -> 대한민국(KOR) 매칭, 일치도 기반 정렬
+   *
+   * @param {string} query 검색어
+   * @returns {Array<Object>} 매칭된 국가 속성 목록
+   */
   searchCountry(query) {
     const q = query.trim().toLowerCase();
     if (!q) return [];
 
     const features = this.countriesSource.getFeatures();
-    return features
-      .map(f => f.getProperties())
-      .filter(p => {
-        const ko = (p.name_ko || '').toLowerCase();
-        const en = (p.name_en || '').toLowerCase();
-        const iso = (p.iso_a3 || '').toLowerCase();
-        return ko.includes(q) || en.includes(q) || iso.includes(q);
-      });
+    const results = [];
+
+    for (const f of features) {
+      const p = f.getProperties();
+      const ko = (p.name_ko || '').toLowerCase();
+      const en = (p.name_en || '').toLowerCase();
+      const iso = (p.iso_a3 || '').toLowerCase();
+      const aliases = COUNTRY_ALIASES[p.iso_a3] || [];
+
+      let matchType = null;
+      if (ko === q || iso === q || aliases.some(a => a.toLowerCase() === q)) {
+        matchType = 1; // 정확 일치
+      } else if (ko.startsWith(q) || en.startsWith(q) || aliases.some(a => a.toLowerCase().startsWith(q))) {
+        matchType = 2; // 전방 일치
+      } else if (ko.includes(q) || en.includes(q) || iso.includes(q) || aliases.some(a => a.toLowerCase().includes(q))) {
+        matchType = 3; // 부분 일치
+      }
+
+      if (matchType !== null) {
+        results.push({
+          country: p,
+          matchType
+        });
+      }
+    }
+
+    // 일치도 순서로 정렬 (정확 일치 -> 전방 일치 -> 부분 일치)
+    results.sort((a, b) => a.matchType - b.matchType);
+    return results.map(r => r.country);
   }
 }

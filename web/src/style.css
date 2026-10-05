@@ -287,6 +287,28 @@ body, html {
   pointer-events: none;
 }
 
+/* 오프라인 및 타일 로드 실패 안내 배너 (#8) */
+.offline-notice-banner {
+  position: absolute;
+  top: calc(84px + var(--safe-area-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  background: rgba(30, 41, 59, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
 /* OpenLayers 저작자 표기: 내비게이션 바 / 제스처 바에 가려지지 않도록 safe-area-bottom 반영 */
 .ol-attribution {
   bottom: calc(4px + var(--safe-area-bottom)) !important;

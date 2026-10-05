@@ -3,6 +3,7 @@ package com.sgshs.pilot.comparecountry
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -93,6 +94,9 @@ class MainActivity : AppCompatActivity() {
             cacheMode = WebSettings.LOAD_DEFAULT
             useWideViewPort = true
             loadWithOverviewMode = true
+            // #8: 시스템 글꼴 크기 설정(fontScale)을 적정 범위(85%~130%) 내에서 반영하여 가독성 및 접근성 향상
+            val fontScale = resources.configuration.fontScale
+            textZoom = (fontScale * 100).toInt().coerceIn(85, 130)
             // R-2: OSM 공식 타일서버를 직접 호출하므로 OSM 사용 정책(Tile Usage Policy)에
             // 따라 앱을 식별할 수 있는 User-Agent를 붙인다. JS의 fetch/XHR는 User-Agent가
             // forbidden header라 자바스크립트에서 설정할 수 없어, WebView 설정이 유일한 경로다.
@@ -161,6 +165,14 @@ class MainActivity : AppCompatActivity() {
         lastInsetsJs = js
         if (::webView.isInitialized) {
             webView.evaluateJavascript(js, null)
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (::webView.isInitialized) {
+            val fontScale = newConfig.fontScale
+            webView.settings.textZoom = (fontScale * 100).toInt().coerceIn(85, 130)
         }
     }
 }
