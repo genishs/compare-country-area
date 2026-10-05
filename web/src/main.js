@@ -20,7 +20,11 @@ function measureFitPadding() {
   if (mapRect.width === 0 || mapRect.height === 0) return null;
 
   const GAP = 12;
-  const SIDE = 16;
+  const computed = typeof window !== 'undefined' ? getComputedStyle(document.documentElement) : null;
+  const safeLeft = computed ? (parseFloat(computed.getPropertyValue('--safe-area-left')) || 0) : 0;
+  const safeRight = computed ? (parseFloat(computed.getPropertyValue('--safe-area-right')) || 0) : 0;
+  const sideLeft = Math.max(16, Math.round(safeLeft + 12));
+  const sideRight = Math.max(16, Math.round(safeRight + 12));
 
   const header = document.querySelector('.app-header');
   const headerBottom = header ? header.getBoundingClientRect().bottom : mapRect.top;
@@ -46,7 +50,7 @@ function measureFitPadding() {
     bottom = Math.max(0, bottom - overflow);
     top = Math.max(0, Math.min(top, mapRect.height - minVisible - bottom));
   }
-  return [top, SIDE, bottom, SIDE];
+  return [top, sideRight, bottom, sideLeft];
 }
 
 document.addEventListener('DOMContentLoaded', () => {
