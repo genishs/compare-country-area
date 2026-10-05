@@ -192,7 +192,7 @@ body, html {
   align-items: center;
   pointer-events: none;
   z-index: 10;
-  padding: 0 calc(14px + var(--safe-area-right)) calc(16px + var(--safe-area-bottom)) calc(14px + var(--safe-area-left));
+  padding: 0 calc(14px + var(--safe-area-right)) calc(26px + var(--safe-area-bottom)) calc(14px + var(--safe-area-left));
 }
 
 /* 플로팅 상태 뱃지 (위도/배율 & 리셋) — 카드 바로 위에 항상 위치 */
@@ -316,7 +316,7 @@ body, html {
 }
 
 /* 하단 비교 카드 */
-/* R-4: OSM 저작자표시(.ol-attribution)가 가리지 않도록 #sheet-container의 bottom 여백 위에 위치 */
+/* R-4: 시트 아래 여백(26px + safe-area-bottom)이 OSM 저작자표시(4px + safe-area-bottom, 높이 약 18px)보다 위에 카드를 둔다 */
 .comparison-card {
   position: relative;
   width: 100%;
@@ -704,7 +704,7 @@ body, html {
     width: 170px;
   }
   #sheet-container {
-    padding: 0 10px 24px 10px;
+    padding: 0 calc(10px + var(--safe-area-right)) calc(26px + var(--safe-area-bottom)) calc(10px + var(--safe-area-left));
   }
   .scale-badge-container {
     margin-bottom: 6px;
@@ -801,7 +801,7 @@ body.is-searching #sheet-container {
     font-size: 12px;
   }
   #sheet-container {
-    padding: 0 calc(12px + var(--safe-area-right)) calc(10px + var(--safe-area-bottom)) calc(12px + var(--safe-area-left));
+    padding: 0 calc(12px + var(--safe-area-right)) calc(26px + var(--safe-area-bottom)) calc(12px + var(--safe-area-left));
   }
   .scale-badge-container {
     margin-bottom: 4px;

@@ -325,11 +325,9 @@ export class MapManager {
     };
 
     const state = this.countriesSource.getState();
-    console.log('[MapManager] loadInitialKorea initial source state:', state);
 
     const onSourceChange = () => {
       const currentState = this.countriesSource.getState();
-      console.log('[MapManager] countriesSource change state:', currentState);
       if (currentState === 'ready') {
         this.countriesSource.un('change', onSourceChange);
         checkFeatures();
