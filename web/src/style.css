@@ -543,10 +543,20 @@ body, html {
     padding: 6px 10px;
     font-size: 11px;
     gap: 6px;
+    /* 좁은 폭에서는 위도/축척 단위로만 줄바꿈 */
+    flex-wrap: wrap;
+    row-gap: 2px;
+    min-width: 0;
+  }
+  .badge-lat,
+  .badge-scale {
+    white-space: nowrap;
   }
   .reset-btn {
     padding: 6px 10px;
     font-size: 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .countries-grid {
     grid-template-columns: 1fr;
