@@ -88,8 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  window.mapManager = mapManager;
-
   // 3. 상단 국가 검색창 연동
   const searchInput = document.getElementById('search-input');
   const searchResults = document.getElementById('search-results');
