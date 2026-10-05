@@ -83,8 +83,9 @@ export class MapManager {
       format: new GeoJSON()
     });
 
-    this.countriesSource.on('featuresloaderror', () => {
-      this.handleDataLoadError();
+    this.countriesSource.on('featuresloaderror', (evt) => {
+      console.error('[MapManager] countriesSource featuresloaderror event:', evt);
+      this.handleDataLoadError('featuresloaderror event fired');
     });
 
     this.countriesLayer = new VectorLayer({
@@ -269,14 +270,26 @@ export class MapManager {
       this.onFeaturesReady();
     };
 
-    this.countriesSource.once('change', () => {
-      const state = this.countriesSource.getState();
-      if (state === 'ready') {
+    const state = this.countriesSource.getState();
+    console.log('[MapManager] loadInitialKorea initial source state:', state);
+
+    const onSourceChange = () => {
+      const currentState = this.countriesSource.getState();
+      console.log('[MapManager] countriesSource change state:', currentState);
+      if (currentState === 'ready') {
+        this.countriesSource.un('change', onSourceChange);
         checkFeatures();
-      } else if (state === 'error') {
-        this.handleDataLoadError();
+      } else if (currentState === 'error') {
+        this.countriesSource.un('change', onSourceChange);
+        this.handleDataLoadError('source state is error on change');
       }
-    });
+    };
+
+    if (state === 'ready') {
+      checkFeatures();
+    } else {
+      this.countriesSource.on('change', onSourceChange);
+    }
   }
 
   /**
