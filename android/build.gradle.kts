@@ -1,6 +1,5 @@
 plugins {
-    // compileSdk/targetSdk 36 요건 반영: AGP 8.5.0은 compileSdk 35까지만 지원하므로
-    // compileSdk 36을 지원하는 최소 버전(8.9.1) 이상으로 상향한다.
-    id("com.android.application") version "8.9.1" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.24" apply false
+    // AGP 9.0+ : 내장 Kotlin 사용(org.jetbrains.kotlin.android 플러그인 불필요),
+    // 최적화된 리소스 축소(R8) 대응. compileSdk/targetSdk 36 지원.
+    id("com.android.application") version "9.0.1" apply false
 }
