@@ -1,6 +1,5 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
 }
 
 // 릴리스 서명: SGSHS 공용 업로드 키(alias "upload").
@@ -28,8 +27,8 @@ android {
         applicationId = "com.sgshs.pilot.comparecountry"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -62,9 +61,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
     }
     buildFeatures {
         // MainActivity가 OSM 타일 요청 User-Agent에 BuildConfig.VERSION_NAME을 쓴다
